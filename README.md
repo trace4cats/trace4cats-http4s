@@ -1,4 +1,4 @@
-# Trace4Cats Htt4ps integration layer
+# Trace4Cats Http4s integration layer
 
 [![Continuous Integration](https://github.com/trace4cats/trace4cats-repo-template/workflows/Continuous%20Integration/badge.svg)](https://github.com/trace4cats/trace4cats-repo-template/actions?query=workflow%3A%22Continuous%20Integration%22)
 [![Join the chat at https://gitter.im/trace4cats/community](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/trace4cats/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
