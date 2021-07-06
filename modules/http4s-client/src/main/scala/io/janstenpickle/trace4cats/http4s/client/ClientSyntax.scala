@@ -11,7 +11,7 @@ import org.http4s.client.Client
 trait ClientSyntax {
   implicit class TracedClient[F[_]](client: Client[F]) {
     def liftTrace[G[_]](
-      toHeaders: ToHeaders = ToHeaders.all,
+      toHeaders: ToHeaders = ToHeaders.standard,
       spanNamer: Http4sSpanNamer = Http4sSpanNamer.methodWithPath
     )(implicit P: Provide[F, G, Span[F]], F: MonadCancelThrow[F], G: MonadCancelThrow[G]): Client[G] =
       ClientTracer
