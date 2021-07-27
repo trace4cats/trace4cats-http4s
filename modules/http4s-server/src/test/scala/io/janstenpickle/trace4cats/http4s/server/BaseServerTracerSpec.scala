@@ -65,7 +65,7 @@ abstract class BaseServerTracerSpec[F[_]: Async, G[_]: Async](
     }
   }
 
-  it should "correctly set span status when the server throws an exception" in forAll { errorMsg: String =>
+  it should "correctly set span status when the server throws an exception" in forAll { (errorMsg: String) =>
     val app = HttpRoutes.of[G] { case GET -> Root =>
       ApplicativeThrow[G].raiseError(new RuntimeException(errorMsg))
     }
@@ -78,7 +78,7 @@ abstract class BaseServerTracerSpec[F[_]: Async, G[_]: Async](
     }
   }
 
-  it should "correctly set the span status from the http response" in forAll { response: G[Response[G]] =>
+  it should "correctly set the span status from the http response" in forAll { (response: G[Response[G]]) =>
     val app = HttpRoutes.of[G] { case GET -> Root =>
       response
     }
@@ -94,7 +94,7 @@ abstract class BaseServerTracerSpec[F[_]: Async, G[_]: Async](
     }
   }
 
-  it should "should filter all requests" in forAll { response: G[Response[G]] =>
+  it should "should filter all requests" in forAll { (response: G[Response[G]]) =>
     val app = HttpRoutes.of[G] { case GET -> Root =>
       response
     }
