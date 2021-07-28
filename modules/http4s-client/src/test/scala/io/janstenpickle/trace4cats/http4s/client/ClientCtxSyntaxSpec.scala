@@ -2,7 +2,6 @@ package io.janstenpickle.trace4cats.http4s.client
 
 import cats.data.Kleisli
 import cats.effect.IO
-import cats.{~>, Id}
 import io.janstenpickle.trace4cats.ToHeaders
 import io.janstenpickle.trace4cats.http4s.client.syntax._
 import io.janstenpickle.trace4cats.http4s.client.Instances._

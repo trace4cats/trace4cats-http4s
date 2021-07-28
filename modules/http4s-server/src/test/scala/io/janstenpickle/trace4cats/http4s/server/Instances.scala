@@ -2,7 +2,6 @@ package io.janstenpickle.trace4cats.http4s.server
 
 import cats.data.Kleisli
 import cats.effect.IO
-import cats.effect.unsafe.IORuntime
 import io.janstenpickle.trace4cats.http4s.common.{CommonInstances, TraceContext}
 import io.janstenpickle.trace4cats.inject.Trace
 
