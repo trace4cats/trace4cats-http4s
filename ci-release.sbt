@@ -1,4 +1,4 @@
-ThisBuild / scalaVersion := Dependencies.Versions.scala3
+ThisBuild / scalaVersion := Dependencies.Versions.scala213
 ThisBuild / crossScalaVersions := Seq(
   Dependencies.Versions.scala213,
   Dependencies.Versions.scala212,
