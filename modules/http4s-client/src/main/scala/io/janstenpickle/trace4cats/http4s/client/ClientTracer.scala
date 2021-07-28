@@ -16,7 +16,7 @@ object ClientTracer {
     headersGetter: Getter[Ctx, TraceHeaders],
     spanNamer: Http4sSpanNamer
   )(implicit P: Provide[F, G, Ctx]): Client[G] =
-    Client { request: Request[G] =>
+    Client { (request: Request[G]) =>
       Resource
         .eval(P.ask[Ctx])
         .flatMap { parentCtx =>
@@ -32,7 +32,7 @@ object ClientTracer {
             .flatMap { childSpan =>
               val childCtx = spanLens.set(childSpan)(parentCtx)
               val headers = headersGetter.get(childCtx)
-              val req = request.putHeaders(Http4sHeaders.converter.to(headers).headers)
+              val req: Request[G] = request.transformHeaders(_ ++ Http4sHeaders.converter.to(headers))
 
               for {
                 // only extract request attributes if the span is sampled as the address matching can be quite expensive
@@ -40,9 +40,8 @@ object ClientTracer {
                   if (childSpan.context.traceFlags.sampled == SampleDecision.Include)
                     Resource.eval(childSpan.putAll(Http4sClientRequest.toAttributes(request)))
                   else Resource.unit[F]
-
-                res <- client
-                  .run(req.mapK(P.provideK(childCtx)))
+                runClient = client.run _ // work around for a typer bug in Scala 3.0.1
+                res <- runClient(req.mapK(P.provideK(childCtx)))
                   .evalTap { resp =>
                     childSpan.setStatus(Http4sStatusMapping.toSpanStatus(resp.status))
                   }
