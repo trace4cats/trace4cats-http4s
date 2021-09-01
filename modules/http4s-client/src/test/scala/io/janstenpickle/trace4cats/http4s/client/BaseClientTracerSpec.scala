@@ -6,7 +6,7 @@ import cats.implicits._
 import cats.{~>, Eq, Id}
 import io.janstenpickle.trace4cats.{Span, ToHeaders}
 import io.janstenpickle.trace4cats.`export`.RefSpanCompleter
-import io.janstenpickle.trace4cats.base.context.Provide
+import io.janstenpickle.trace4cats.base.context._
 import io.janstenpickle.trace4cats.http4s.common.{Http4sHeaders, Http4sStatusMapping}
 import io.janstenpickle.trace4cats.inject.{EntryPoint, Trace}
 import io.janstenpickle.trace4cats.kernel.{SpanCompleter, SpanSampler}
@@ -23,11 +23,11 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 
-abstract class BaseClientTracerSpec[F[_]: Async, G[_]: Async: Trace, Ctx](
+abstract class BaseClientTracerSpec[F[_]: Async, G[_]: Async: Trace, Low[_]: Async, Ctx](
   unsafeRunK: F ~> Id,
-  makeSomeContext: Span[F] => Ctx,
+  makeSomeContext: Span[Low] => Ctx,
   liftClient: Client[F] => Client[G]
-)(implicit P: Provide[F, G, Ctx])
+)(implicit P: Provide[F, G, Ctx], L: Lift[Low, F])
     extends AnyFlatSpec
     with ScalaCheckDrivenPropertyChecks
     with Matchers
@@ -64,21 +64,22 @@ abstract class BaseClientTracerSpec[F[_]: Async, G[_]: Async: Trace, Ctx](
 
       val (httpApp, headersRef) = makeHttpApp(response)
 
-      unsafeRunK(RefSpanCompleter[F]("test").flatMap { completer =>
+      unsafeRunK(L.lift(RefSpanCompleter[Low]("test")).flatMap { completer =>
         withClient(httpApp) { client =>
           def req(body: String): G[Unit] = runReq(client, GET(body, Uri.unsafeFromString(s"/")))
 
           for {
             _ <- entryPoint(completer)
               .root(rootSpanName)
-              .use { span =>
+              .mapK(L.liftK)
+              .use { (span: Span[Low]) =>
                 P.provideK(makeSomeContext(span))(
                   Trace[G]
                     .span(req1SpanName)(req(req1SpanName))
                     .handleError(_ => ()) >> Trace[G].span(req2SpanName)(req(req2SpanName)).handleError(_ => ())
                 )
               }
-            spans <- completer.get
+            spans <- L.lift(completer.get)
             headersMap <- headersRef.get
           } yield {
             (spans.toList.map(_.name) should contain)
@@ -109,7 +110,7 @@ abstract class BaseClientTracerSpec[F[_]: Async, G[_]: Async: Trace, Ctx](
       })
     }
 
-  def entryPoint(completer: SpanCompleter[F]): EntryPoint[F] = EntryPoint[F](SpanSampler.always[F], completer)
+  def entryPoint(completer: SpanCompleter[Low]): EntryPoint[Low] = EntryPoint[Low](SpanSampler.always[Low], completer)
 
   def makeHttpApp(resp: Response[F]): (HttpApp[F], Ref[F, Map[String, TraceHeaders]]) = {
     val headersRef = Ref.unsafe[F, Map[String, TraceHeaders]](Map.empty)

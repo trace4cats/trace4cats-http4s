@@ -1,7 +1,7 @@
 package io.janstenpickle.trace4cats.http4s.client
 
 import cats.effect.kernel.MonadCancelThrow
-import io.janstenpickle.trace4cats.base.context.Provide
+import io.janstenpickle.trace4cats.base.context._
 import io.janstenpickle.trace4cats.base.optics.{Getter, Lens}
 import io.janstenpickle.trace4cats.http4s.common.Http4sSpanNamer
 import io.janstenpickle.trace4cats.model.TraceHeaders
@@ -16,6 +16,18 @@ trait ClientSyntax {
     )(implicit P: Provide[F, G, Span[F]], F: MonadCancelThrow[F], G: MonadCancelThrow[G]): Client[G] =
       ClientTracer
         .liftTrace[F, G, Span[F]](client, Lens.id, Getter((toHeaders.fromContext _).compose(_.context)), spanNamer)
+
+    def trace[Low[_]](
+      toHeaders: ToHeaders = ToHeaders.standard,
+      spanNamer: Http4sSpanNamer = Http4sSpanNamer.methodWithPath
+    )(implicit
+      P: Provide[F, F, Span[Low]],
+      P0: Lift[Low, F],
+      F: MonadCancelThrow[F],
+      L: MonadCancelThrow[Low]
+    ): Client[F] =
+      ClientTracer
+        .trace[F, Low, Span[Low]](client, Lens.id, Getter((toHeaders.fromContext _).compose(_.context)), spanNamer)
 
     def liftTraceContext[G[_], Ctx](
       spanLens: Lens[Ctx, Span[F]],
