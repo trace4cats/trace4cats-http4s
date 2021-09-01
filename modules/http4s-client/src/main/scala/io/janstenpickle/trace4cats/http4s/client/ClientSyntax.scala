@@ -20,11 +20,7 @@ trait ClientSyntax {
     def trace[Low[_]](
       toHeaders: ToHeaders = ToHeaders.standard,
       spanNamer: Http4sSpanNamer = Http4sSpanNamer.methodWithPath
-    )(implicit
-      P: Provide[Low, F, Span[Low]],
-      F: MonadCancelThrow[F],
-      Low: MonadCancelThrow[Low]
-    ): Client[F] =
+    )(implicit P: Provide[Low, F, Span[Low]], F: MonadCancelThrow[F], Low: MonadCancelThrow[Low]): Client[F] =
       ClientTracer
         .trace[Low, F, Span[Low]](client, Lens.id, Getter((toHeaders.fromContext _).compose(_.context)), spanNamer)
 
