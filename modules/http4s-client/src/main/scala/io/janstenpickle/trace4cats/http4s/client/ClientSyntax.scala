@@ -21,13 +21,12 @@ trait ClientSyntax {
       toHeaders: ToHeaders = ToHeaders.standard,
       spanNamer: Http4sSpanNamer = Http4sSpanNamer.methodWithPath
     )(implicit
-      P: Provide[F, F, Span[Low]],
-      P0: Lift[Low, F],
+      P: Provide[Low, F, Span[Low]],
       F: MonadCancelThrow[F],
-      L: MonadCancelThrow[Low]
+      Low: MonadCancelThrow[Low]
     ): Client[F] =
       ClientTracer
-        .trace[F, Low, Span[Low]](client, Lens.id, Getter((toHeaders.fromContext _).compose(_.context)), spanNamer)
+        .trace[Low, F, Span[Low]](client, Lens.id, Getter((toHeaders.fromContext _).compose(_.context)), spanNamer)
 
     def liftTraceContext[G[_], Ctx](
       spanLens: Lens[Ctx, Span[F]],

@@ -52,12 +52,12 @@ object ClientTracer {
         }
     }
 
-  def trace[F[_]: MonadCancelThrow, Low[_]: MonadCancelThrow, Ctx](
+  def trace[Low[_]: MonadCancelThrow, F[_]: MonadCancelThrow, Ctx](
     client: Client[F],
     spanLens: Lens[Ctx, Span[Low]],
     headersGetter: Getter[Ctx, TraceHeaders],
     spanNamer: Http4sSpanNamer
-  )(implicit P: Provide[F, F, Ctx], L: Lift[Low, F]): Client[F] =
+  )(implicit P: Provide[Low, F, Ctx]): Client[F] =
     Client { (request: Request[F]) =>
       Resource
         .eval(P.ask[Ctx])
@@ -71,7 +71,7 @@ object ClientTracer {
                 Http4sStatusMapping.toSpanStatus(status)
               }
             )
-            .mapK(L.liftK)
+            .mapK(P.liftK)
             .flatMap { (childSpan: Span[Low]) =>
               val childCtx: Ctx = spanLens.set(childSpan)(parentCtx)
               val headers = headersGetter.get(childCtx)
@@ -81,12 +81,12 @@ object ClientTracer {
                 // only extract request attributes if the span is sampled as the address matching can be quite expensive
                 _ <-
                   if (childSpan.context.traceFlags.sampled == SampleDecision.Include)
-                    Resource.eval(L.lift(childSpan.putAll(Http4sClientRequest.toAttributes(request))))
+                    Resource.eval(P.lift(childSpan.putAll(Http4sClientRequest.toAttributes(request))))
                   else Resource.unit[F]
                 runClient = client.run _ // work around for a typer bug in Scala 3.0.1
-                res <- runClient(req.mapK(P.provideK(childCtx)))
+                res <- runClient(req.mapK(P.provideK(childCtx).andThen(P.liftK)))
                   .evalTap { (resp: Response[F]) =>
-                    L.lift(childSpan.setStatus(Http4sStatusMapping.toSpanStatus(resp.status)))
+                    P.lift(childSpan.setStatus(Http4sStatusMapping.toSpanStatus(resp.status)))
                   }
               } yield res
             }
