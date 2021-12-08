@@ -9,6 +9,15 @@ object Http4sSpanNamer {
 
   val methodWithPath: Http4sSpanNamer = req => s"${req.method.name} ${Uri.decode(req.pathInfo.toString)}"
 
+  /** OpenTelemetry's recommended default for http clients
+    *
+    * See [[https://opentelemetry.io/docs/reference/specification/metrics/semantic_conventions/http-metrics/#parameterized-attributes]]
+    */
+  val httpMethod: Http4sSpanNamer = req => s"HTTP ${req.method.name}"
+
+  val spanNameAttrOrHttpMethod: Http4sSpanNamer = req =>
+    req.attributes.lookup(Http4sAttributes.Keys.SpanName).getOrElse(httpMethod(req))
+
   /** Similar to `methodWithPath`, but allows one to reduce the cardinality of the operation name by applying a
     * transformation to each path segment, e.g.:
     * {{{
