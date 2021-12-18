@@ -36,6 +36,6 @@ object Http4sSpanNamer {
     */
   val httpMethod: Http4sSpanNamer = req => s"HTTP ${req.method.name}"
 
-  val spanNameAttrOrHttpMethod: Http4sSpanNamer = req =>
-    req.attributes.lookup(Http4sAttributes.Keys.SpanName).getOrElse(httpMethod(req))
+  def spanNameAttrOrElse(fallback: Http4sSpanNamer): Http4sSpanNamer = req =>
+    req.attributes.lookup(Http4sAttributes.Keys.SpanName).getOrElse(fallback(req))
 }
