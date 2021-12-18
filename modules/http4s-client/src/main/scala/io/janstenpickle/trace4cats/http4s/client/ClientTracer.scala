@@ -1,11 +1,17 @@
 package io.janstenpickle.trace4cats.http4s.client
 
 import cats.effect.kernel.{MonadCancelThrow, Resource}
-import cats.implicits.catsSyntaxFlatMapOps
+import cats.syntax.flatMap._
 import io.janstenpickle.trace4cats.Span
 import io.janstenpickle.trace4cats.base.context.Provide
 import io.janstenpickle.trace4cats.base.optics.{Getter, Lens}
-import io.janstenpickle.trace4cats.http4s.common.{Http4sHeaders, Http4sSpanNamer, Http4sStatusMapping, Request_, Response_}
+import io.janstenpickle.trace4cats.http4s.common.{
+  Http4sHeaders,
+  Http4sSpanNamer,
+  Http4sStatusMapping,
+  Request_,
+  Response_
+}
 import io.janstenpickle.trace4cats.model.{SampleDecision, SpanKind, TraceHeaders}
 import org.http4s.Request
 import org.http4s.client.{Client, UnexpectedStatus}

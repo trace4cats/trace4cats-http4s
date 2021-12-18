@@ -6,12 +6,9 @@ import io.janstenpickle.trace4cats.model.{AttributeValue, SemanticAttributeKeys}
 import org.http4s.Uri
 
 object Http4sClientRequest {
-  // FIXME: move to trace4cats-model...
-  val SemanticAttributeKeys_httpFlavor: String = "http.flavor"
-
   def toAttributes(req: Request_): Map[String, AttributeValue] =
     Map[String, AttributeValue](
-      SemanticAttributeKeys_httpFlavor -> f"${req.httpVersion.major}.${req.httpVersion.minor}",
+      SemanticAttributeKeys.httpFlavor -> s"${req.httpVersion.major}.${req.httpVersion.minor}",
       SemanticAttributeKeys.httpMethod -> req.method.name,
       SemanticAttributeKeys.httpUrl -> req.uri.toString
     ) ++ req.uri.host.map { host =>
