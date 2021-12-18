@@ -28,4 +28,14 @@ object Http4sSpanNamer {
         .mkString("/")
       if (path.isEmpty) method else s"$method $path"
     }
+
+  /** OpenTelemetry's recommended default for http clients
+    *
+    * See
+    * [[https://opentelemetry.io/docs/reference/specification/metrics/semantic_conventions/http-metrics/#parameterized-attributes]]
+    */
+  val httpMethod: Http4sSpanNamer = req => s"HTTP ${req.method.name}"
+
+  def spanNameAttrOrElse(fallback: Http4sSpanNamer): Http4sSpanNamer = req =>
+    req.attributes.lookup(Http4sAttributes.Keys.SpanName).getOrElse(fallback(req))
 }

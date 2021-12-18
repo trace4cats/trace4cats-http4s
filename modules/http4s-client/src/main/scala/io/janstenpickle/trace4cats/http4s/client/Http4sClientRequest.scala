@@ -7,7 +7,11 @@ import org.http4s.Uri
 
 object Http4sClientRequest {
   def toAttributes(req: Request_): Map[String, AttributeValue] =
-    req.uri.host.map { host =>
+    Map[String, AttributeValue](
+      SemanticAttributeKeys.httpFlavor -> s"${req.httpVersion.major}.${req.httpVersion.minor}",
+      SemanticAttributeKeys.httpMethod -> req.method.name,
+      SemanticAttributeKeys.httpUrl -> req.uri.toString
+    ) ++ req.uri.host.map { host =>
       val key = host match {
         case _: Uri.Ipv4Address => SemanticAttributeKeys.remoteServiceIpv4
         case _: Uri.Ipv6Address => SemanticAttributeKeys.remoteServiceIpv6

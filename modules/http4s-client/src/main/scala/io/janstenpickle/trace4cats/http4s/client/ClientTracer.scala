@@ -1,10 +1,17 @@
 package io.janstenpickle.trace4cats.http4s.client
 
 import cats.effect.kernel.{MonadCancelThrow, Resource}
+import cats.syntax.flatMap._
 import io.janstenpickle.trace4cats.Span
 import io.janstenpickle.trace4cats.base.context.Provide
 import io.janstenpickle.trace4cats.base.optics.{Getter, Lens}
-import io.janstenpickle.trace4cats.http4s.common.{Http4sHeaders, Http4sSpanNamer, Http4sStatusMapping, Request_}
+import io.janstenpickle.trace4cats.http4s.common.{
+  Http4sHeaders,
+  Http4sSpanNamer,
+  Http4sStatusMapping,
+  Request_,
+  Response_
+}
 import io.janstenpickle.trace4cats.model.{SampleDecision, SpanKind, TraceHeaders}
 import org.http4s.Request
 import org.http4s.client.{Client, UnexpectedStatus}
@@ -43,7 +50,8 @@ object ClientTracer {
                 runClient = client.run _ // work around for a typer bug in Scala 3.0.1
                 res <- runClient(req.mapK(P.provideK(childCtx)))
                   .evalTap { resp =>
-                    childSpan.setStatus(Http4sStatusMapping.toSpanStatus(resp.status))
+                    childSpan.setStatus(Http4sStatusMapping.toSpanStatus(resp.status)) >>
+                      childSpan.putAll(Http4sClientResponse.toAttributes(resp))
                   }
               } yield res
             }
