@@ -12,8 +12,8 @@ Integration layer for [Trace4Cats] and [Http4s].
 Add it to your `build.sbt`:
 
 ```scala
-"io.janstenpickle" %% "trace4cats-http4s-client" % "0.13.0"
-"io.janstenpickle" %% "trace4cats-http4s-server" % "0.13.0"
+"io.janstenpickle" %% "trace4cats-http4s-client" % "0.13.1"
+"io.janstenpickle" %% "trace4cats-http4s-server" % "0.13.1"
 ```
 
 
