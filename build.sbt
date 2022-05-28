@@ -37,8 +37,8 @@ lazy val `http4s-client` = (project in file("modules/http4s-client"))
   .settings(publishSettings)
   .settings(
     name := "trace4cats-http4s-client",
-    libraryDependencies ++= Seq(Dependencies.trace4catsInject, Dependencies.http4sClient),
-    libraryDependencies ++= Seq(Dependencies.trace4catsExporterCommon, Dependencies.trace4catsTestkit).map(_ % Test)
+    libraryDependencies ++= Seq(Dependencies.trace4catsCore, Dependencies.http4sClient),
+    libraryDependencies ++= Seq(Dependencies.trace4catsKernel, Dependencies.trace4catsTestkit).map(_ % Test)
   )
   .dependsOn(`http4s-common` % "compile->compile;test->test")
 
@@ -46,9 +46,9 @@ lazy val `http4s-common` = (project in file("modules/http4s-common"))
   .settings(publishSettings)
   .settings(
     name := "trace4cats-http4s-common",
-    libraryDependencies ++= Seq(Dependencies.trace4catsModel, Dependencies.http4sCore, Dependencies.http4sDsl),
+    libraryDependencies ++= Seq(Dependencies.trace4catsKernel, Dependencies.http4sCore, Dependencies.http4sDsl),
     libraryDependencies ++= Seq(
-      Dependencies.trace4catsBase,
+      Dependencies.trace4catsContextUtils,
       Dependencies.trace4catsCore,
       Dependencies.trace4catsTestkit
     ).map(_ % Test)
@@ -58,11 +58,7 @@ lazy val `http4s-server` = (project in file("modules/http4s-server"))
   .settings(publishSettings)
   .settings(
     name := "trace4cats-http4s-server",
-    libraryDependencies ++= Seq(Dependencies.trace4catsInject),
-    libraryDependencies ++= Seq(
-      Dependencies.http4sClient,
-      Dependencies.trace4catsExporterCommon,
-      Dependencies.trace4catsTestkit
-    ).map(_ % Test)
+    libraryDependencies ++= Seq(Dependencies.trace4catsCore),
+    libraryDependencies ++= Seq(Dependencies.http4sClient, Dependencies.trace4catsTestkit).map(_ % Test)
   )
   .dependsOn(`http4s-common` % "compile->compile;test->test")
