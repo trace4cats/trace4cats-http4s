@@ -1,7 +1,7 @@
 package trace4cats.http4s.client
 
 import cats.effect.kernel.MonadCancelThrow
-import org.http4s.{Headers, Response}
+import org.http4s.{Headers, Request, Response}
 import org.http4s.client.Client
 import org.typelevel.ci.CIString
 import trace4cats.context.Provide
@@ -24,7 +24,10 @@ trait ClientSyntax {
       toHeaders: ToHeaders = ToHeaders.standard,
       spanNamer: Http4sSpanNamer = Http4sSpanNamer.methodWithPath,
       dropHeadersWhen: CIString => Boolean = Headers.SensitiveHeaders.contains,
-      responseAttributesGetter: Getter[Response[F], Map[String, AttributeValue]] = Getter(_ => Map.empty)
+      requestAttributesGetter: Getter[Request[G], Map[String, AttributeValue]] =
+        Getter[Request[G], Map[String, AttributeValue]](_ => Map.empty),
+      responseAttributesGetter: Getter[Response[G], Map[String, AttributeValue]] =
+        Getter[Response[G], Map[String, AttributeValue]](_ => Map.empty)
     )(implicit P: Provide[F, G, Span[F]], F: MonadCancelThrow[F], G: MonadCancelThrow[G]): Client[G] =
       ClientTracer
         .liftTrace[F, G, Span[F]](
@@ -33,6 +36,7 @@ trait ClientSyntax {
           Getter((toHeaders.fromContext _).compose(_.context)),
           spanNamer,
           dropHeadersWhen,
+          requestAttributesGetter,
           responseAttributesGetter
         )
 
@@ -49,9 +53,20 @@ trait ClientSyntax {
       headersGetter: Getter[Ctx, TraceHeaders],
       spanNamer: Http4sSpanNamer = Http4sSpanNamer.methodWithPath,
       dropHeadersWhen: CIString => Boolean = Headers.SensitiveHeaders.contains,
-      responseAttributesGetter: Getter[Response[F], Map[String, AttributeValue]] = Getter(_ => Map.empty)
+      requestAttributesGetter: Getter[Request[G], Map[String, AttributeValue]] =
+        Getter[Request[G], Map[String, AttributeValue]](_ => Map.empty),
+      responseAttributesGetter: Getter[Response[G], Map[String, AttributeValue]] =
+        Getter[Response[G], Map[String, AttributeValue]](_ => Map.empty)
     )(implicit P: Provide[F, G, Ctx], F: MonadCancelThrow[F], G: MonadCancelThrow[G]): Client[G] =
       ClientTracer
-        .liftTrace[F, G, Ctx](client, spanLens, headersGetter, spanNamer, dropHeadersWhen, responseAttributesGetter)
+        .liftTrace[F, G, Ctx](
+          client,
+          spanLens,
+          headersGetter,
+          spanNamer,
+          dropHeadersWhen,
+          requestAttributesGetter,
+          responseAttributesGetter
+        )
   }
 }

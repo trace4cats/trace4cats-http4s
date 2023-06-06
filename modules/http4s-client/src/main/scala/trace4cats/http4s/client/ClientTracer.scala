@@ -24,7 +24,8 @@ object ClientTracer {
       headersGetter,
       spanNamer,
       Headers.SensitiveHeaders.contains(_),
-      Getter[Response[F], Map[String, AttributeValue]](_ => Map.empty)
+      Getter[Request[G], Map[String, AttributeValue]](_ => Map.empty),
+      Getter[Response[G], Map[String, AttributeValue]](_ => Map.empty)
     )
 
   def liftTrace[F[_]: MonadCancelThrow, G[_]: MonadCancelThrow, Ctx](
@@ -33,7 +34,8 @@ object ClientTracer {
     headersGetter: Getter[Ctx, TraceHeaders],
     spanNamer: Http4sSpanNamer,
     dropHeadersWhen: CIString => Boolean,
-    responseAttributesGetter: Getter[Response[F], Map[String, AttributeValue]]
+    requestAttributesGetter: Getter[Request[G], Map[String, AttributeValue]],
+    responseAttributesGetter: Getter[Response[G], Map[String, AttributeValue]]
   )(implicit P: Provide[F, G, Ctx]): Client[G] =
     Client { (request: Request[G]) =>
       Resource
@@ -55,14 +57,18 @@ object ClientTracer {
               val reqHeaderAttrs = Http4sHeaders.requestFields(req, dropHeadersWhen)
               val isSampled = childSpan.context.traceFlags.sampled == SampleDecision.Include
               // only extract request attributes if the span is sampled as the host parsing is quite expensive
-              val reqExtraAttrs = if (isSampled) Http4sClientRequest.toAttributes(request) else Map.empty
+              val reqExtraAttrs =
+                if (isSampled)
+                  Http4sClientRequest.toAttributes(request) ++ requestAttributesGetter.get(request)
+                else Map.empty
+
               for {
                 _ <- Resource.eval(childSpan.putAll(reqHeaderAttrs ++ reqExtraAttrs: _*))
                 runClient = client.run _ // work around for a typer bug in Scala 3.0.1
                 res <- runClient(req.mapK(P.provideK(childCtx)))
                   .evalTap { resp =>
                     val respHeaderAttrs = Http4sHeaders.responseFields(resp, dropHeadersWhen)
-                    val respExtraAttrs = if (isSampled) responseAttributesGetter.get(resp) else Map.empty
+                    val respExtraAttrs = if (isSampled) responseAttributesGetter.get(resp.mapK(P.liftK)) else Map.empty
                     childSpan.setStatus(Http4sStatusMapping.toSpanStatus(resp.status)) >>
                       childSpan.putAll(respHeaderAttrs ++ respExtraAttrs: _*)
                   }
