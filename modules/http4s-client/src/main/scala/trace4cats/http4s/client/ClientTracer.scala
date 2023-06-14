@@ -12,13 +12,14 @@ import trace4cats.model.{AttributeValue, SampleDecision, SpanKind, TraceHeaders}
 import trace4cats.optics.{Getter, Lens}
 
 object ClientTracer {
-  private[client] def liftTrace[F[_]: MonadCancelThrow, G[_]: MonadCancelThrow, Ctx](
+  @deprecated("Use liftTraceExtended instead", "0.14.1")
+  def liftTrace[F[_]: MonadCancelThrow, G[_]: MonadCancelThrow, Ctx](
     client: Client[F],
     spanLens: Lens[Ctx, Span[F]],
     headersGetter: Getter[Ctx, TraceHeaders],
     spanNamer: Http4sSpanNamer
   )(implicit P: Provide[F, G, Ctx]): Client[G] =
-    liftTrace[F, G, Ctx](
+    liftTraceExtended[F, G, Ctx](
       client,
       spanLens,
       headersGetter,
@@ -28,7 +29,7 @@ object ClientTracer {
       Getter[Response[G], Map[String, AttributeValue]](_ => Map.empty)
     )
 
-  def liftTrace[F[_]: MonadCancelThrow, G[_]: MonadCancelThrow, Ctx](
+  def liftTraceExtended[F[_]: MonadCancelThrow, G[_]: MonadCancelThrow, Ctx](
     client: Client[F],
     spanLens: Lens[Ctx, Span[F]],
     headersGetter: Getter[Ctx, TraceHeaders],

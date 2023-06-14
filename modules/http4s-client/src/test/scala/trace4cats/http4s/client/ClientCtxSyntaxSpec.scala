@@ -11,5 +11,8 @@ class ClientCtxSyntaxSpec
     extends BaseClientTracerSpec[IO, Kleisli[IO, TraceContext[IO], *], TraceContext[IO]](
       RunIOToId,
       TraceContext("3d86cad5-d321-448f-a758-d28714fc1045", _),
-      _.liftTraceContext(spanLens = TraceContext.span[IO], headersGetter = TraceContext.headers[IO](ToHeaders.all))
+      _.liftTraceContextExtended(
+        spanLens = TraceContext.span[IO],
+        headersGetter = TraceContext.headers[IO](ToHeaders.all)
+      )
     )

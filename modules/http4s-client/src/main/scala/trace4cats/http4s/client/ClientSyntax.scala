@@ -13,14 +13,23 @@ import trace4cats.{Span, ToHeaders}
 trait ClientSyntax {
   implicit class TracedClient[F[_]](client: Client[F]) {
 
-    private[client] def liftTraceOld[G[_]](
+    @deprecated("Use liftTraceExtended instead", "0.14.1")
+    def liftTrace[G[_]](
       toHeaders: ToHeaders = ToHeaders.standard,
-      spanNamer: Http4sSpanNamer = Http4sSpanNamer.methodWithPath
+      spanNamer: Http4sSpanNamer = Http4sSpanNamer.methodWithPath,
     )(implicit P: Provide[F, G, Span[F]], F: MonadCancelThrow[F], G: MonadCancelThrow[G]): Client[G] =
       ClientTracer
-        .liftTrace[F, G, Span[F]](client, Lens.id, Getter((toHeaders.fromContext _).compose(_.context)), spanNamer)
+        .liftTraceExtended[F, G, Span[F]](
+          client,
+          Lens.id,
+          Getter((toHeaders.fromContext _).compose(_.context)),
+          spanNamer,
+          Headers.SensitiveHeaders.contains(_),
+          Getter[Request[G], Map[String, AttributeValue]](_ => Map.empty),
+          Getter[Response[G], Map[String, AttributeValue]](_ => Map.empty)
+        )
 
-    def liftTrace[G[_]](
+    def liftTraceExtended[G[_]](
       toHeaders: ToHeaders = ToHeaders.standard,
       spanNamer: Http4sSpanNamer = Http4sSpanNamer.methodWithPath,
       dropHeadersWhen: CIString => Boolean = Headers.SensitiveHeaders.contains,
@@ -30,7 +39,7 @@ trait ClientSyntax {
         Getter[Response[G], Map[String, AttributeValue]](_ => Map.empty)
     )(implicit P: Provide[F, G, Span[F]], F: MonadCancelThrow[F], G: MonadCancelThrow[G]): Client[G] =
       ClientTracer
-        .liftTrace[F, G, Span[F]](
+        .liftTraceExtended[F, G, Span[F]](
           client,
           Lens.id,
           Getter((toHeaders.fromContext _).compose(_.context)),
@@ -40,15 +49,24 @@ trait ClientSyntax {
           responseAttributesGetter
         )
 
-    private[client] def liftTraceContextOld[G[_], Ctx](
+    @deprecated("Use liftTraceContextExtended instead", "0.14.1")
+    def liftTraceContext[G[_], Ctx](
       spanLens: Lens[Ctx, Span[F]],
       headersGetter: Getter[Ctx, TraceHeaders],
       spanNamer: Http4sSpanNamer = Http4sSpanNamer.methodWithPath
     )(implicit P: Provide[F, G, Ctx], F: MonadCancelThrow[F], G: MonadCancelThrow[G]): Client[G] =
       ClientTracer
-        .liftTrace[F, G, Ctx](client, spanLens, headersGetter, spanNamer)
+        .liftTraceExtended[F, G, Ctx](
+          client,
+          spanLens,
+          headersGetter,
+          spanNamer,
+          Headers.SensitiveHeaders.contains(_),
+          Getter[Request[G], Map[String, AttributeValue]](_ => Map.empty),
+          Getter[Response[G], Map[String, AttributeValue]](_ => Map.empty)
+        )
 
-    def liftTraceContext[G[_], Ctx](
+    def liftTraceContextExtended[G[_], Ctx](
       spanLens: Lens[Ctx, Span[F]],
       headersGetter: Getter[Ctx, TraceHeaders],
       spanNamer: Http4sSpanNamer = Http4sSpanNamer.methodWithPath,
@@ -59,7 +77,7 @@ trait ClientSyntax {
         Getter[Response[G], Map[String, AttributeValue]](_ => Map.empty)
     )(implicit P: Provide[F, G, Ctx], F: MonadCancelThrow[F], G: MonadCancelThrow[G]): Client[G] =
       ClientTracer
-        .liftTrace[F, G, Ctx](
+        .liftTraceExtended[F, G, Ctx](
           client,
           spanLens,
           headersGetter,
