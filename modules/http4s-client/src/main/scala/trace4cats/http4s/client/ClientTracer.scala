@@ -2,8 +2,8 @@ package trace4cats.http4s.client
 
 import cats.effect.kernel.{MonadCancelThrow, Resource}
 import cats.syntax.flatMap._
-import org.http4s.{Headers, Request, Response}
 import org.http4s.client.{Client, UnexpectedStatus}
+import org.http4s.{Request, Response}
 import org.typelevel.ci.CIString
 import trace4cats.Span
 import trace4cats.context.Provide
@@ -12,24 +12,8 @@ import trace4cats.model.{AttributeValue, SampleDecision, SpanKind, TraceHeaders}
 import trace4cats.optics.{Getter, Lens}
 
 object ClientTracer {
-  @deprecated("Use liftTraceExtended instead", "0.14.1")
-  def liftTrace[F[_]: MonadCancelThrow, G[_]: MonadCancelThrow, Ctx](
-    client: Client[F],
-    spanLens: Lens[Ctx, Span[F]],
-    headersGetter: Getter[Ctx, TraceHeaders],
-    spanNamer: Http4sSpanNamer
-  )(implicit P: Provide[F, G, Ctx]): Client[G] =
-    liftTraceExtended[F, G, Ctx](
-      client,
-      spanLens,
-      headersGetter,
-      spanNamer,
-      Headers.SensitiveHeaders.contains(_),
-      Getter[Request[G], Map[String, AttributeValue]](_ => Map.empty),
-      Getter[Response[G], Map[String, AttributeValue]](_ => Map.empty)
-    )
 
-  def liftTraceExtended[F[_]: MonadCancelThrow, G[_]: MonadCancelThrow, Ctx](
+  def liftTrace[F[_]: MonadCancelThrow, G[_]: MonadCancelThrow, Ctx](
     client: Client[F],
     spanLens: Lens[Ctx, Span[F]],
     headersGetter: Getter[Ctx, TraceHeaders],
