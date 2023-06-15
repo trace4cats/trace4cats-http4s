@@ -1,7 +1,6 @@
 package trace4cats.http4s.server
 
 import java.util.UUID
-
 import cats.data.NonEmptyList
 import cats.effect.kernel.{Async, Resource}
 import cats.syntax.applicativeError._
@@ -23,8 +22,10 @@ import trace4cats.http4s.common.{Http4sRequestFilter, Http4sStatusMapping}
 import trace4cats.kernel.SpanSampler
 import trace4cats.model.{CompletedSpan, SpanKind, SpanStatus}
 
+import scala.annotation.nowarn
 import scala.collection.immutable.Queue
 
+@nowarn("msg=.*unused value of type org.scalatest.Assertion.*")
 abstract class BaseServerTracerSpec[F[_]: Async, G[_]: Async](
   unsafeRunK: F ~> Id,
   noopProvideK: G ~> F,
