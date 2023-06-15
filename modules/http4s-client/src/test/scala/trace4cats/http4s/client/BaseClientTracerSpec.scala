@@ -21,6 +21,9 @@ import trace4cats.kernel.{SpanCompleter, SpanSampler}
 import trace4cats.model.TraceHeaders
 import trace4cats._
 
+import scala.annotation.nowarn
+
+@nowarn("msg=.*unused value of type org.scalatest.Assertion.*")
 abstract class BaseClientTracerSpec[F[_]: Async, G[_]: Async: Trace, Ctx](
   unsafeRunK: F ~> Id,
   makeSomeContext: Span[F] => Ctx,
