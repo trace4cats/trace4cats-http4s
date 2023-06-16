@@ -2,12 +2,13 @@ package trace4cats.http4s.client
 
 import cats.effect.kernel.{MonadCancelThrow, Resource}
 import cats.syntax.flatMap._
+import cats.syntax.option._
 import org.http4s.client.{Client, UnexpectedStatus}
 import org.http4s.{Request, Response}
 import org.typelevel.ci.CIString
 import trace4cats.Span
 import trace4cats.context.Provide
-import trace4cats.http4s.common.{Http4sHeaders, Http4sSpanNamer, Http4sStatusMapping, Request_, Response_}
+import trace4cats.http4s.common._
 import trace4cats.model.{AttributeValue, SampleDecision, SpanKind, TraceHeaders}
 import trace4cats.optics.{Getter, Lens}
 
@@ -44,7 +45,8 @@ object ClientTracer {
               // only extract request attributes if the span is sampled as the host parsing is quite expensive
               val reqExtraAttrs =
                 if (isSampled)
-                  Http4sClientRequest.toAttributes(request) ++ requestAttributesGetter.get(request)
+                  Http4sClientRequest.toAttributes(request) ++ requestAttributesGetter.get(request) ++
+                    request.attributes.lookup(Http4sAttributes.Keys.ExtraRequestAttributes).map(_.value).orEmpty
                 else Map.empty
 
               for {
@@ -53,7 +55,11 @@ object ClientTracer {
                 res <- runClient(req.mapK(P.provideK(childCtx)))
                   .evalTap { resp =>
                     val respHeaderAttrs = Http4sHeaders.responseFields(resp, dropHeadersWhen)
-                    val respExtraAttrs = if (isSampled) responseAttributesGetter.get(resp.mapK(P.liftK)) else Map.empty
+                    val respExtraAttrs =
+                      if (isSampled)
+                        responseAttributesGetter.get(resp.mapK(P.liftK)) ++
+                          resp.attributes.lookup(Http4sAttributes.Keys.ExtraResponseAttributes).map(_.value).orEmpty
+                      else Map.empty
                     childSpan.setStatus(Http4sStatusMapping.toSpanStatus(resp.status)) >>
                       childSpan.putAll(respHeaderAttrs ++ respExtraAttrs: _*)
                   }
