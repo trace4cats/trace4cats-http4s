@@ -3,7 +3,7 @@ package trace4cats.http4s.client
 import cats.data.NonEmptyList
 import cats.effect.kernel.{Async, Ref}
 import cats.implicits._
-import cats.{~>, Eq, Id}
+import cats.{~>, Eq, Eval, Id}
 import org.http4s._
 import org.http4s.client.Client
 import org.http4s.client.dsl.Http4sClientDsl
@@ -16,7 +16,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 import trace4cats.context.Provide
-import trace4cats.http4s.common.{Http4sHeaders, Http4sStatusMapping}
+import trace4cats.http4s.common.{Http4sAttributes, Http4sHeaders, Http4sStatusMapping}
 import trace4cats.kernel.{SpanCompleter, SpanSampler}
 import trace4cats.model.TraceHeaders
 import trace4cats._
@@ -67,7 +67,13 @@ abstract class BaseClientTracerSpec[F[_]: Async, G[_]: Async: Trace, Ctx](
 
       unsafeRunK(RefSpanCompleter[F]("test").flatMap { completer =>
         withClient(httpApp) { client =>
-          def req(body: String): G[Unit] = runReq(client, GET(body, Uri.unsafeFromString(s"/")))
+          def req(body: String): G[Unit] = {
+            val req = GET(body, Uri.unsafeFromString(s"/")).withAttribute(
+              Http4sAttributes.Keys.ExtraRequestAttributes,
+              Eval.now(Map("test" -> AttributeValue.stringToTraceValue("works")))
+            )
+            runReq(client, req)
+          }
 
           for {
             _ <- entryPoint(completer)
@@ -99,6 +105,8 @@ abstract class BaseClientTracerSpec[F[_]: Async, G[_]: Async: Trace, Ctx](
                 spans.toList.sortBy(_.`end`.toEpochMilli).reverse.find(_.name == "GET /").get.context.spanId
               )
             )
+
+            spans.head.attributes("test").toString() should be("works")
 
             val expectedStatus = Http4sStatusMapping.toSpanStatus(response.status)
             (spans.toList.collect {
